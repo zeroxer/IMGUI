@@ -1,11 +1,18 @@
 @echo off
 
+set platform=x64
+
+set debugFlags=/Zi
+set encodingFlags=/utf-8 /D UNICODE
+set includeFlags=-I..\third_party\SDL2\include\
+set linkFlags=/link /ENTRY:WinMainCRTStartup /SUBSYSTEM:WINDOWS /LIBPATH:..\third_party\SDL2\lib\%platform%\
+set libFlags=SDL2.lib SDL2main.lib SDL2test.lib
+
 if not exist ..\build mkdir ..\build
-copy ..\third_party\SDL2\lib\x64\SDL2.dll ..\build
+if not exist ..\build\SDL2.dll copy ..\third_party\SDL2\lib\%platform%\SDL2.dll ..\build
 pushd ..\build
 cl ..\src\main.cpp ^
-    /utf-8 /D UNICODE -I ..\third_party\SDL2\include\ SDL2.lib SDL2main.lib SDL2test.lib^
-    /link /ENTRY:WinMainCRTStartup /SUBSYSTEM:WINDOWS /LIBPATH:..\third_party\SDL2\lib\x64\
+    %debugFlags% %libFlags% %encodingFlags% %includeFlags% %linkFlags%
 popd
 
 start ..\build\main.exe
