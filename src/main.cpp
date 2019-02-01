@@ -10,41 +10,41 @@ void render()
     // Get the window surface
     screen = SDL_GetWindowSurface(window);
 
-    // // Lock surface if needed
-    // if (SDL_MUSTLOCK(screen))
-    // {
-    //     if (SDL_LockSurface(screen) < 0)
-    //     {
-    //         return;
-    //     }
-    // }
+    // Lock surface if needed
+    if (SDL_MUSTLOCK(screen))
+    {
+        if (SDL_LockSurface(screen) < 0)
+        {
+            return;
+        }
+    }
 
 
-    // // Ask SDL for the time in milliseconds
-    // int tick = SDL_GetTicks();
+    // Ask SDL for the time in milliseconds
+    int tick = SDL_GetTicks();
 
-    // // Declare a couple of variables
-    // int i, j, yofs, ofs;
+    // Declare a couple of variables
+    int i, j, yofs, ofs;
 
-    // // Draw to screen
-    // yofs = 0;
-    // for (int i = 0; i < 480; i++)
-    // {
-    //     for (int j = 0, ofs = yofs; j < 640; j++, ofs++)
-    //     {
-    //         ((unsigned int*)screen->pixels)[ofs] = i * i + j * j + tick;
-    //     }
-    //     yofs += screen->pitch / 4;
-    // }
+    // Draw to screen
+    yofs = 0;
+    for (int i = 0; i < 480; i++)
+    {
+        for (int j = 0, ofs = yofs; j < 640; j++, ofs++)
+        {
+            ((unsigned int*)screen->pixels)[ofs] = i * i + j * j + tick;
+        }
+        yofs += screen->pitch / 4;
+    }
 
-    // // Unlock if needed
-    // if (SDL_MUSTLOCK(screen))
-    // {
-    //     SDL_UnlockSurface(screen);
-    // }    
+    // Unlock if needed
+    if (SDL_MUSTLOCK(screen))
+    {
+        SDL_UnlockSurface(screen);
+    }    
 
-    // 另外一种绘制方式
-    SDL_FillRect( screen, NULL, SDL_MapRGB( screen->format, 0x00, 0x00, 0xFF ) );
+    // // 另外一种绘制方式
+    // SDL_FillRect( screen, NULL, SDL_MapRGB( screen->format, 0x00, 0x00, 0xFF ) );
 
 
     // Tell SDL to update the whole screen
