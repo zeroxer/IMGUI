@@ -1,6 +1,6 @@
 @echo off
 
-mkdir ..\build
+if not exist ..\build mkdir ..\build
 copy ..\third_party\SDL2\lib\x64\SDL2.dll ..\build
 pushd ..\build
 cl ..\src\main.cpp ^
