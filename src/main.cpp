@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
                 SDL_WINDOWPOS_UNDEFINED, 
                 SDL_WINDOWPOS_UNDEFINED, 
                 640, 480,
-                // SDL_WINDOW_FULLSCREEN |  
+                // SDL_WINDOW_FULLSCREEN_DESKTOP |  
                 SDL_WINDOW_OPENGL);
 
     // If we fail, return error.
