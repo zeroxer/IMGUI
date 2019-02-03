@@ -19,7 +19,7 @@ struct UIState
 }
 uistate = {0, 0, 0, 0, 0};
 
-// Simplified interface to SDL_
+// Simplified interface to SDL
 void drawrect(int x, int y, int w, int h, int color)
 {
     SDL_Rect r;
@@ -30,17 +30,116 @@ void drawrect(int x, int y, int w, int h, int color)
     SDL_FillRect(screen, &r, color);
 }
 
+// Check whether current mouse position is within a rectangle.
+int regionhit(int x, int y, int w, int h)
+{
+    if (uistate.mousex < x ||
+        uistate.mousey < y ||
+        uistate.mousex > x + w ||
+        uistate.mousey > y + h)
+        {
+            return 0;
+        }
+    return 1;
+}
+
+// Simple button IMGUI widget
+int button(int id, int x, int y)
+{
+    // Check whether the button should be hot
+    if (regionhit(x, y, 64, 48))
+    {
+        uistate.hotitem = id;
+        if (uistate.activeitem == 0 && uistate.mousedown)
+        {
+            uistate.activeitem = id;
+        }
+    }
+
+    // Render button -- base button shadow
+    drawrect(x+8, y+8, 64, 48, 0);
+
+    // Button is hot.
+    if (uistate.hotitem == id)
+    {
+        if (uistate.activeitem == id)
+        {
+            // Button is both 'hot' and 'active' -- change color and position
+            drawrect(x+2, y+2, 64, 48, 0xffffff);
+        } else {
+            // Button is merely 'hot' -- change color
+            drawrect(x, y, 64, 48, 0xffffff);
+        }
+    } else {
+        // Button is not hot, but it may be active -- normal front color of button
+        drawrect(x, y, 64, 48, 0xaaaaaa);
+    }
+
+    // Check whether user has click the button.
+
+    // If button is hot and active, but mouse button is not
+    // down, the user must have clicked the button.
+    if (uistate.mousedown == 0 &&
+        uistate.hotitem == id &&
+        uistate.activeitem == id)
+        {
+            return 1;
+        }
+
+    // Otherwise, no clicky.
+    return 0;
+
+}
+
+// Prepare for IMGUI code
+void imgui_prepare()
+{
+    uistate.hotitem = 0;
+}
+
+// Finish up after IMGUI code
+void imgui_finish()
+{
+    // 如果鼠标左键松开，立刻取消Button的激活状态。
+    if (uistate.mousedown == 0)
+    {
+        uistate.activeitem = 0;
+    } else {
+        // if (uistate.activeitem == 0)
+        // {
+        //     // ???
+        //     uistate.activeitem = -1;
+        // }
+    }
+}
+
 void render()
 {
+    static int bgcolor = 0x77;
+
     // Get the window surface
     screen = SDL_GetWindowSurface(window);
 
     // Clear the screen.
-    drawrect(0, 0, screen_width, screen_height, 0);
+    drawrect(0, 0, screen_width, screen_height, bgcolor);
 
-    // Test the uistate is working.
-    drawrect(uistate.mousex - 32, uistate.mousey - 24, 
-            64, 48, 0xff << (uistate.mousedown * 8));
+    imgui_prepare();
+
+    button(2, 50, 50);
+
+    button(2, 150, 50);
+
+    if (button(3, 50, 150))
+    {
+        bgcolor = (SDL_GetTicks() * 0x0cac01a) | 0x77;
+    }
+
+    if (button(4, 150, 150))
+    {
+        exit(0);
+    }
+
+    imgui_finish();
 
     // Tell SDL to update the whole screen
     SDL_UpdateWindowSurface(window);
