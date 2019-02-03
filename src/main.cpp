@@ -5,50 +5,36 @@
 SDL_Window *window;
 SDL_Surface *screen;
 
+int screen_width = 640;
+int screen_height = 480;
+
+// Simplified interface to SDL_
+void drawrect(int x, int y, int w, int h, int color)
+{
+    SDL_Rect r;
+    r.x = x;
+    r.y = y;
+    r.w = w;
+    r.h = h;
+    SDL_FillRect(screen, &r, color);
+}
+
 void render()
 {
     // Get the window surface
     screen = SDL_GetWindowSurface(window);
 
-    // Lock surface if needed
-    if (SDL_MUSTLOCK(screen))
-    {
-        if (SDL_LockSurface(screen) < 0)
-        {
-            return;
-        }
-    }
+    // Clear the screen.
+    drawrect(0, 0, screen_width, screen_height, 0);
 
-
-    // Ask SDL for the time in milliseconds
-    int tick = SDL_GetTicks();
-
-    // Declare a couple of variables
-    int i, j, yofs, ofs;
-
-    // Draw to screen
-    yofs = 0;
-    for (int i = 0; i < 480; i++)
-    {
-        for (int j = 0, ofs = yofs; j < 640; j++, ofs++)
-        {
-            ((unsigned int*)screen->pixels)[ofs] = i * i + j * j + tick;
-        }
-        yofs += screen->pitch / 4;
-    }
-
-    // Unlock if needed
-    if (SDL_MUSTLOCK(screen))
-    {
-        SDL_UnlockSurface(screen);
-    }    
-
-    // // 另外一种绘制方式
-    // SDL_FillRect( screen, NULL, SDL_MapRGB( screen->format, 0x00, 0x00, 0xFF ) );
-
+    // Draw a rectangle.
+    drawrect(64, 48, 64, 48, 0xff);
 
     // Tell SDL to update the whole screen
     SDL_UpdateWindowSurface(window);
+
+    // Don't take all the cpu time.
+    SDL_Delay(10);
 }
 
 // Entry point
@@ -69,14 +55,14 @@ int main(int argc, char *argv[])
     window = SDL_CreateWindow("IMGUI - Learn 窗口", 
                 SDL_WINDOWPOS_UNDEFINED, 
                 SDL_WINDOWPOS_UNDEFINED, 
-                640, 480,
+                screen_width, screen_height,
                 // SDL_WINDOW_FULLSCREEN_DESKTOP |  
                 SDL_WINDOW_OPENGL);
 
     // If we fail, return error.
     if (window == NULL)
     {
-        fprintf(stderr, "Unable to set 640*480 video: %s\n", SDL_GetError());
+        fprintf(stderr, "Unable to set %d*%d video: %s\n", screen_width, screen_height, SDL_GetError());
         exit(1);
     }
 
