@@ -2,6 +2,13 @@
 #include <stdio.h>
 #include "SDL.h"
 
+// Generate unique id for each widget
+// 把const char *（指针）强制转换成int类型。
+// 因为指针的值是内存地址，每一个GEN_ID都有一个自己的内存地址，
+// 所以GEN_ID可以说是唯一的。（但是，因为内存地址是64位，int是32位，所以其中会有一些有待商榷的问题。）
+#define STRINGERMACRO(x) #x
+#define GEN_ID (int) (__FILE__ STRINGERMACRO(__LINE__))
+
 SDL_Window *window;
 SDL_Surface *screen;
 
@@ -125,9 +132,9 @@ void render()
 
     imgui_prepare();
 
-    button(2, 50, 50);
-
-    button(2, 150, 50);
+    button(GEN_ID, 50, 50);    
+    
+    button(GEN_ID, 150, 50);
 
     if (button(3, 50, 150))
     {
