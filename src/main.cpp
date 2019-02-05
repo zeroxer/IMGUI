@@ -98,6 +98,59 @@ int button(int id, int x, int y)
 
 }
 
+// Simple scroll bar IMGUI widget
+int slider(int id, int x, int y, int max, int &value)
+{
+    // Calculate mouse cursor's relative y offset
+    // scrollbar高度：256像素
+    int ypos = ((256 - 16) * value) / max;
+
+    // Check for hotness
+    // Scrollbar的热区
+    if (regionhit(x+8, y+8, 16, 255))
+    {
+        uistate.hotitem = id;
+        if (uistate.activeitem == 0 && uistate.mousedown)
+        {
+            uistate.activeitem = id;
+        }
+    }
+
+    // Render the scrollbar
+    drawrect(x, y, 32, 256+16,0x777777);
+
+    if (uistate.activeitem == id || uistate.hotitem == id)
+    {
+        drawrect(x+8, y+8+ypos, 16, 16, 0xffffff);
+    } else {
+        drawrect(x+8, y+8+ypos, 16, 16, 0xaaaaaa);
+    }
+
+    // Update widget value
+    if (uistate.activeitem == id)
+    {
+        int mousepos = uistate.mousey - (y + 8);
+        if (mousepos < 0)
+        {
+            mousepos = 0;
+        }
+        if (mousepos > 255)
+        {
+            mousepos = 255;
+        }
+        // 计算当前滑块应该在的位置。如果位置不对，则更新位置。
+        // int v = (mousepos / 255) * max;
+        int v = (mousepos * max) / 255;
+        if (v != value)
+        {
+            value = v;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 // Prepare for IMGUI code
 void imgui_prepare()
 {
@@ -144,6 +197,32 @@ void render()
     if (button(4, 150, 150))
     {
         exit(0);
+    }
+
+    // Scrollbar test
+
+    // 通过控制移位数和slider的max值，来实现不同的范围控制。
+
+    // Blue
+    int slidervalue = bgcolor & 0xff;
+    if (slider(GEN_ID, 500, 40, 255, slidervalue))
+    {
+        bgcolor = (bgcolor & 0xffff00) | slidervalue;
+    }
+
+    // Green
+    // 其中：10, 0x3f, 63, 是根据对应关系计算出来的。
+    slidervalue = ((bgcolor >> 10) & 0x3f);
+    if (slider(GEN_ID, 550, 40, 63, slidervalue))
+    {
+        bgcolor = (bgcolor & 0xff00ff) | (slidervalue << 10);
+    }
+
+    //Red
+    slidervalue = ((bgcolor >> 20) & 0xf);
+    if (slider(GEN_ID, 600, 40, 15, slidervalue))
+    {
+        bgcolor = (bgcolor & 0x00ffff) | (slidervalue << 20);
     }
 
     imgui_finish();
