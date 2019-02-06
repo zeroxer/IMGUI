@@ -16,8 +16,8 @@ SDL_Surface *screen;
 // Font surface
 SDL_Surface *font;
 
-int screen_width = 640;
-int screen_height = 480;
+int screen_width = 1000;
+int screen_height = 600;
 
 struct UIState
 {
