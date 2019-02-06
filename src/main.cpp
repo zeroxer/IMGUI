@@ -139,6 +139,15 @@ int button(int id, int x, int y)
         }
     }
 
+    // If button is hot and active, but mouse button is not
+    // down, the user must have clicked the widget; give it keyboard focus.
+    if (uistate.mousedown == 0 &&
+        uistate.hotitem == id &&
+        uistate.activeitem == id)
+        {
+            uistate.kbditem = id;
+        }
+
     uistate.lastwidget = id;
 
     // Check whether user has click the button.
@@ -239,6 +248,15 @@ int slider(int id, int x, int y, int max, int &value)
             } break;
         }
     }
+
+    // If slide is hot and active, but mouse button is not
+    // down, the user must have clicked the widget; give it keyboard focus.
+    if (uistate.mousedown == 0 &&
+        uistate.hotitem == id &&
+        uistate.activeitem == id)
+        {
+            uistate.kbditem = id;
+        }
 
     uistate.lastwidget = id;
 
