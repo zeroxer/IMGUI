@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "SDL.h"
 
 // Generate unique id for each widget
@@ -10,7 +11,10 @@
 #define GEN_ID (int) (__FILE__ STRINGERMACRO(__LINE__))
 
 SDL_Window *window;
+// Screen surface
 SDL_Surface *screen;
+// Font surface
+SDL_Surface *font;
 
 int screen_width = 640;
 int screen_height = 480;
@@ -29,9 +33,44 @@ struct UIState
     int keyentered;
     int keymod;
 
+    int keychar;
+
     int lastwidget;
 }
-uistate = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+uistate = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+// Draw a single character
+// Characters are on top of each other in the font image, in ASCII order,
+// so all this routine does is just set the coordinates for the character
+// and use SDL to blit out.
+void drawchar(char ch, int x, int y)
+{
+    SDL_Rect src, dst;
+
+    src.w = 14;
+    src.h = 24;
+    src.x = 0;
+    src.y = (ch - 32) * 24;
+
+    dst.w = 14;
+    dst.h = 24;
+    dst.x = x;
+    dst.y = y;
+
+    SDL_BlitSurface(font, &src, screen, &dst); 
+}
+
+// Draw the string.
+// Characters are fixed width, so this is also deadly simple.
+void drawstring(char *string, int x, int y)
+{
+    while (*string)
+    {
+        drawchar(*string, x, y);
+        x += 14;
+        string++;
+    }
+}
 
 // Simplified interface to SDL
 void drawrect(int x, int y, int w, int h, int color)
@@ -285,6 +324,97 @@ int slider(int id, int x, int y, int max, int &value)
     return 0;
 }
 
+int textfield(int id, int x, int y, char *buffer)
+{
+    int len = strlen(buffer);
+    int changed = 0;
+
+    // Check for hotness
+    if (regionhit(x-4, y-4, 30*14+8, 24+8))
+    {
+        uistate.hotitem = id;
+        if (uistate.activeitem == 0 && uistate.mousedown)
+        {
+            uistate.activeitem = id;
+        }
+    }
+
+    // If no widget has keyboard focus, take it
+    if (uistate.kbditem == 0)
+    {
+        uistate.kbditem = id;
+    }
+
+    // If we have keyboard focus, show it
+    if (uistate.kbditem == id)
+    {
+        drawrect(x-6, y-6, 30*14+12, 24+12, 0xff0000);
+    }
+
+    // Render the text field
+    if (uistate.activeitem == id || uistate.hotitem == id)
+    {
+        drawrect(x-4, y-4, 30*14+8, 24+8, 0xaaaaaa);
+    } else {
+        drawrect(x-4, y-4, 30*14+8, 24+8, 0x777777);
+    }
+
+    drawstring(buffer, x, y);
+
+    // Render cursor if we have keyboard focus
+    if (uistate.kbditem == id && (SDL_GetTicks() >> 8) & 1)
+    {
+        drawstring("_", x + len * 14, y);
+    }
+
+    // If we have keyboard focus, we'll need to process the keys
+    if (uistate.kbditem == id)
+    {
+        switch (uistate.keyentered)
+        {
+            case SDLK_TAB:
+            {
+                uistate.kbditem = 0;
+                if (uistate.keymod & KMOD_SHIFT)
+                {
+                    uistate.kbditem =  uistate.lastwidget;
+                }
+                uistate.keyentered = 0;
+            } break;
+
+            case SDLK_BACKSPACE:
+            {
+                if (len > 0)
+                {
+                    len--;
+                    buffer[len] = 0;
+                    changed = 1;
+                }
+            } break;
+        }
+
+        if (uistate.keychar >= 32 && uistate.keychar < 127 && len < 30)
+        {
+            buffer[len] = uistate.keychar;
+            len++;
+            buffer[len] = 0;
+            changed = 1;
+        }
+    }
+
+    // 鼠标点击切换焦点
+    if (uistate.mousedown == 0 &&
+        uistate.hotitem == id &&
+        uistate.activeitem == id)
+        {
+            uistate.kbditem = id;
+        }
+
+    uistate.lastwidget = id;
+
+    return changed;
+}
+
 // Prepare for IMGUI code
 void imgui_prepare()
 {
@@ -314,33 +444,37 @@ void imgui_finish()
 
     // Clear the entered key
     uistate.keyentered = 0;
+    uistate.keychar = 0;
 }
 
 void render()
 {
     static int bgcolor = 0x77;
-
-    // Get the window surface
-    screen = SDL_GetWindowSurface(window);
+    static char sometext[10] = "Some text";
 
     // Clear the screen.
     drawrect(0, 0, screen_width, screen_height, bgcolor);
 
     imgui_prepare();
 
-    button(GEN_ID, 50, 50);    
+    if (button(GEN_ID, 50, 50))
+    {
+        bgcolor = 0x77;
+    }   
     
     button(GEN_ID, 150, 50);
 
-    if (button(3, 50, 150))
+    if (button(GEN_ID, 50, 150))
     {
         bgcolor = (SDL_GetTicks() * 0x0cac01a) | 0x77;
     }
 
-    if (button(4, 150, 150))
+    if (button(GEN_ID, 150, 150))
     {
         exit(0);
     }
+
+    textfield(GEN_ID, 50, 250, sometext);
 
     // Scrollbar test
 
@@ -406,6 +540,15 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
+    // Get the window surface
+    screen = SDL_GetWindowSurface(window);
+
+    SDL_Surface *temp = SDL_LoadBMP("font14x24.bmp");
+    font = SDL_ConvertSurface(temp, screen->format, SDL_SWSURFACE);
+    SDL_FreeSurface(temp);
+
+    SDL_SetColorKey(font, SDL_TRUE, 0);
+
     // Main Loop: loop forever.
     while(1)
     {
@@ -443,11 +586,17 @@ int main(int argc, char *argv[])
                     }
                 } break;
 
+                case SDL_TEXTINPUT:
+                {
+                    uistate.keychar = event.text.text[0];
+                } break;
+
                 case SDL_KEYDOWN:
                 {
                     // If a key if pressed, report it to the widgets
                     uistate.keyentered = event.key.keysym.sym;
                     uistate.keymod = event.key.keysym.mod;
+                    // uistate.keychar = event.key.keysym.scancode;
                 } break;
 
                 case SDL_KEYUP:
