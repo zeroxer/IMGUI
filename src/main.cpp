@@ -23,8 +23,15 @@ struct UIState
 
     int hotitem;
     int activeitem;
+
+    // Keyboard process
+    int kbditem;
+    int keyentered;
+    int keymod;
+
+    int lastwidget;
 }
-uistate = {0, 0, 0, 0, 0};
+uistate = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 
 // Simplified interface to SDL
 void drawrect(int x, int y, int w, int h, int color)
@@ -63,6 +70,18 @@ int button(int id, int x, int y)
         }
     }
 
+    // If no widget has keyboard focus, take it
+    if (uistate.kbditem == 0)
+    {
+        uistate.kbditem = id;
+    }
+
+    // If we have keyboard focus, show it
+    if (uistate.kbditem == id)
+    {
+        drawrect(x-6, y-6, 84, 68, 0xff0000);
+    }
+
     // Render button -- base button shadow
     drawrect(x+8, y+8, 64, 48, 0);
 
@@ -81,6 +100,46 @@ int button(int id, int x, int y)
         // Button is not hot, but it may be active -- normal front color of button
         drawrect(x, y, 64, 48, 0xaaaaaa);
     }
+
+    // If we have keyboard focus, we'll need to process the keys
+    if (uistate.kbditem == id)
+    {
+        switch (uistate.keyentered)
+        {
+            case SDLK_TAB:
+            {
+                // If tab is pressed, lose keyboard focus.
+                // Next widget will grab the focus.
+                // 说明：为什么下一个控件会获取TAB键消息？因为代码的处理顺序。
+                // 这一个button的判断执行完之后，程序会执行下一个button的判断程序。
+                // 程序的循环处理逻辑使得TAB键可以实现按照一定的顺序循环切换。
+                // 注意：下一个button获取焦点的逻辑为：如果没有控件已经获取了焦点，那我就获取焦点。
+                uistate.kbditem = 0;
+
+                // If shift was also pressed, we want to move focus
+                // to the previous widget instead.
+                if (uistate.keymod & KMOD_SHIFT)
+                {
+                    uistate.kbditem = uistate.lastwidget;
+                }
+
+                // Also clear the key so that next widget won't process it.
+                uistate.keyentered = 0;
+            } break;
+
+            case SDLK_RETURN:
+            {
+                // Had keyboard focus, received return.
+                // So we'll act as if we were clicked.
+                return 1;
+            } break;
+        
+            default:
+                break;
+        }
+    }
+
+    uistate.lastwidget = id;
 
     // Check whether user has click the button.
 
@@ -116,6 +175,17 @@ int slider(int id, int x, int y, int max, int &value)
         }
     }
 
+    // If no widget has keyboard focus, take it
+    if (uistate.kbditem == 0)
+    {
+        uistate.kbditem = id;
+    }
+
+    if (uistate.kbditem == id)
+    {
+        drawrect(x-4, y-4, 40, 280, 0xff0000);
+    }
+
     // Render the scrollbar
     drawrect(x, y, 32, 256+16,0x777777);
 
@@ -125,6 +195,52 @@ int slider(int id, int x, int y, int max, int &value)
     } else {
         drawrect(x+8, y+8+ypos, 16, 16, 0xaaaaaa);
     }
+
+    // If we have keyboard focus, we'll need to process the keys
+    if (uistate.kbditem == id)
+    {
+        switch (uistate.keyentered)
+        {
+            case SDLK_TAB:
+            {
+                // If tab is pressed, lose keyboard focus
+                // Next widget will grab the focus
+                uistate.kbditem = 0;
+
+                // If shift was also pressed, we want to move focus
+                // to the previous widget instead.
+                if (uistate.keymod & KMOD_SHIFT)
+                {
+                    uistate.kbditem = uistate.lastwidget;
+                }
+
+                // Also clear the key so that next widget won't process it.
+                uistate.keyentered = 0;
+            } break;
+
+            case SDLK_UP:
+            {
+                // Slide slider up (if not at zero)
+                if (value > 0)
+                {
+                    value--;
+                    return 1;
+                }
+            } break;
+
+            case SDLK_DOWN:
+            {
+                // Slide slider down (if not at max)
+                if (value < max)
+                {
+                    value++;
+                    return 1;
+                }
+            } break;
+        }
+    }
+
+    uistate.lastwidget = id;
 
     // Update widget value
     if (uistate.activeitem == id)
@@ -171,6 +287,15 @@ void imgui_finish()
         //     uistate.activeitem = -1;
         // }
     }
+
+    // If no widget grabbed tab, clear focus
+    if (uistate.keyentered == SDLK_TAB)
+    {
+        uistate.kbditem = 0;
+    }
+
+    // Clear the entered key
+    uistate.keyentered = 0;
 }
 
 void render()
@@ -302,7 +427,9 @@ int main(int argc, char *argv[])
 
                 case SDL_KEYDOWN:
                 {
-
+                    // If a key if pressed, report it to the widgets
+                    uistate.keyentered = event.key.keysym.sym;
+                    uistate.keymod = event.key.keysym.mod;
                 } break;
 
                 case SDL_KEYUP:
