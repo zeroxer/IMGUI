@@ -1,5 +1,7 @@
 # 使用 SDL2 实现IMGUI
 
+![](./sdl_imgui.gif)
+
 ## 说明
 ### SDL2
 ```
