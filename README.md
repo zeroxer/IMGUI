@@ -1,4 +1,4 @@
-# 使用 SDL2 实现IMGUI
+# IMGUI
 
 ![](./sdl_imgui.gif)
 
